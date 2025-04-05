@@ -5,6 +5,7 @@ A **Java-based console application** that helps efficiently manage digital and p
 ---
 
 ## 📂 Project Structure
+📦 DigitalAssetManagement ├── 📁 entity // All POJOs or model classes ├── 📁 dao // Interfaces and implementation classes for services ├── 📁 exception // User-defined custom exceptions ├── 📁 util // Utility classes for DB connection & properties ├── 📁 app // Main class to trigger the application └── 📄 README.md
 
 
 ---
