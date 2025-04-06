@@ -10,8 +10,9 @@ import com.java.assetmanagement.myexceptions.AssetNotMaintainException;
 public interface AssetManagementService {
 	List<Asset> showAsset() throws ClassNotFoundException, SQLException;
 	boolean addAsset(Asset asset) throws ClassNotFoundException, SQLException;
-	boolean updateAsset(Asset asset) throws SQLException;
+	boolean updateAsset(Asset asset) throws SQLException, AssetNotFoundException, ClassNotFoundException;
 	boolean deleteAsset(int assetId) throws AssetNotFoundException, SQLException;
+	Asset searchAsset(int assetId);
 	
 	List<Asset> showAllocations() throws ClassNotFoundException, SQLException;
 	boolean allocateAsset(int assetId, int employeeId, String allocationDate) throws SQLException;

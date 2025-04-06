@@ -21,8 +21,41 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	public boolean addAsset(Asset asset) throws SQLException, ClassNotFoundException{
 		try {
 			connection = ConnectionHelper.getConnection();
+			String cmd = "insert into Assets (name, type, serial_number, purchase_date, location, status, owner_id) "
+					+ "values (?, ?, ?, ?, ?, ?, ?)";
+			
+			pst = connection.prepareStatement(cmd);
+
+			pst.setString(1, asset.getName());
+			pst.setString(2, asset.getType());
+			pst.setString(3, asset.getSerialNumber());
+			pst.setDate(4, asset.getPurchaseDate());
+			pst.setString(5, asset.getLocation());
+			pst.setString(6, asset.getStatus().toString());
+			pst.setInt(7, asset.getOwnerId());
+			
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+			
+		return pst.executeUpdate() > 0;
+	}
+	
+	@Override
+	public Asset searchAsset(int assetId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean updateAsset(Asset asset) throws SQLException, AssetNotFoundException, ClassNotFoundException {
+		try {
+			connection = ConnectionHelper.getConnection();
 			String cmd = "insert into Assets (asset_id, name, type, serial_number, purchase_date, location, status, owner_id) "
 					+ "values (?, ?, ?, ?, ?, ?, ?, ?)";
+			pst.executeUpdate(cmd);
+			
 			pst.setInt(1, asset.getAssetId());
 			pst.setString(2, asset.getName());
 			pst.setString(3, asset.getType());
@@ -32,31 +65,35 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 			pst.setString(7, asset.getStatus().toString());
 			pst.setInt(8, asset.getOwnerId());
 			
+		} catch ( SQLException e) {
+			// TODO: handle exception
+		}
+		if (pst.executeUpdate() == 0) {
+		    throw new AssetNotFoundException("No asset found with ID: " + asset.getAssetId());
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean deleteAsset(int assetId) throws SQLException, AssetNotFoundException {
+		Asset asset = new Asset();
+		
+		try {
+			connection = ConnectionHelper.getConnection();
+			connection = ConnectionHelper.getConnection();
+			String cmd = "delete from assets where asset_id = ?";
+			pst.setInt(1, asset.getAssetId());
 			pst.executeUpdate(cmd);
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
+		} catch (ClassNotFoundException | SQLException e) {
 			e.printStackTrace();
-		}
-			
-		return false;
-	}
-
-	@Override
-	public boolean updateAsset(Asset asset) throws SQLException, AssetNotFoundException {
-		// TODO Auto-generated method stub
+		} 
+		
 		if (pst.executeUpdate() == 0) {
 		    throw new AssetNotFoundException("No asset found with ID: " + asset.getAssetId());
 		}
-
-		return false;
-	}
-
-	@Override
-	public boolean deleteAsset(int assetId) throws SQLException {
-		if (pst.executeUpdate() == 0) {
-		    throw new AssetNotFoundException("No asset found with ID: " + asset.getAssetId());
-		}
-		return false;
+		
+		return pst.executeUpdate() > 0;
 	}
 	@Override
 	public List<Asset> showAllocations() throws ClassNotFoundException, SQLException {
@@ -134,5 +171,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 		
 		return assetList;
 	}
+
+
 
 }

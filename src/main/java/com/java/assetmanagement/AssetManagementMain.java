@@ -1,12 +1,15 @@
 package com.java.assetmanagement;
 
+import java.sql.Date;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Scanner;
 
 import com.java.assetmanagement.dao.AssetManagementService;
 import com.java.assetmanagement.dao.AssetManagementServiceImpl;
 import com.java.assetmanagement.model.Asset;
+import com.java.assetmanagement.model.AssetStatus;
 
 public class AssetManagementMain {
 	static Scanner scanner;
@@ -48,10 +51,97 @@ public class AssetManagementMain {
 	            case 1:
 				showAssets();
 	                break;
+	            case 2:
+					addAssets();
+		                break;
+	            case 3:
+					updateAssets();
+		                break;
+	            case 4:
+					daleteAssets();
+		                break;
+	            case 5:
+					showAssets();
+		                break;
+	            case 6:
+					showAssets();
+		                break;
+	            case 7:
+					showAssets();
+		                break;
+	            case 8:
+					showAssets();
+		                break;
+	            case 9:
+					showAssets();
+		                break;
 	            case 10:
+					showAssets();
+		                break;
+	            case 11:
+					showAssets();
+		                break;
+	            case 12:
+					showAssets();
+		                break;
+	            case 13:
+	            	System.out.println("Thank you for using Asset Management System!");
 	                return;
 	        }
-	    } while (choice != 10);
+	    } while (choice != 13);
+	}
+	
+	private static void daleteAssets() {
+		
+	}
+
+	private static void updateAssets() {
+		
+	}
+
+	public static Date convertSql(java.util.Date utilDate) {
+        return new Date(utilDate.getTime());
+    }
+
+	private static void addAssets() {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		sdf.setLenient(false); 
+		try {
+	        Asset asset = new Asset();
+
+	        System.out.print("Enter Name: ");
+	        scanner.nextLine(); 
+	        asset.setName(scanner.nextLine());
+
+	        System.out.print("Enter Type: ");
+	        asset.setType(scanner.nextLine());
+
+	        System.out.print("Enter Serial Number: ");
+	        asset.setSerialNumber(scanner.nextLine());
+
+	        System.out.print("Enter Purchase Date (YYYY-MM-DD): ");
+	        java.util.Date date = sdf.parse(scanner.nextLine());
+	        asset.setPurchaseDate(convertSql(date));
+
+	        System.out.print("Enter Location: ");
+	        asset.setLocation(scanner.nextLine());
+
+	        System.out.print("Enter Status (in_use, decommissioned, under_maintenance): ");
+	        asset.setStatus(AssetStatus.valueOf(scanner.nextLine().toLowerCase()));
+
+	        System.out.print("Enter Owner ID: ");
+	        asset.setOwnerId(scanner.nextInt());
+
+	        boolean added = assetDao.addAsset(asset);
+	        if (added) {
+	            System.out.println("✅ Asset added successfully!");
+	        } else {
+	            System.out.println("❌ Failed to add asset.");
+	        }
+
+	    } catch (Exception e) {
+	        System.out.println("❌ Error: " + e.getMessage());
+	    }
 	}
 
 	private static void showAssets(){
