@@ -9,7 +9,7 @@ public class Asset {
     private String serialNumber;
     private Date purchaseDate;
     private String location;
-    private String status;
+    private AssetStatus status;
     private int ownerId;
     
     public int getAssetId() {
@@ -72,13 +72,13 @@ public class Asset {
 	}
 
 
-	public String getStatus() {
+	public AssetStatus getStatus() {
 		return status;
 	}
 
 
-	public void setStatus(String status) {
-		this.status = status;
+	public void setStatus(AssetStatus assetStatus) {
+		this.status = assetStatus;
 	}
 
 
@@ -97,7 +97,7 @@ public class Asset {
     }
 
 	public Asset(int assetId, String name, String type, String serialNumber, Date purchaseDate, String location,
-			String status, int ownerId) {
+			AssetStatus status, int ownerId) {
 		super();
 		this.assetId = assetId;
 		this.name = name;
