@@ -16,8 +16,8 @@ public interface AssetManagementService {
 	Asset searchAsset(int assetId) throws SQLException, AssetNotFoundException, ClassNotFoundException;
 	
 	List<AssetAllocation> showAllocations() throws ClassNotFoundException, SQLException;
-	boolean allocateAsset(int assetId, int employeeId, String allocationDate) throws SQLException, ClassNotFoundException, AssetNotMaintainException;
-	boolean deallocateAsset(int assetId, int employeeId, String returnDate) throws SQLException, ClassNotFoundException;
+	boolean allocateAsset(int assetId, int employeeId, String allocationDate) throws SQLException, ClassNotFoundException, AssetNotMaintainException, AssetNotFoundException;
+	boolean deallocateAsset(int assetId, int employeeId, String returnDate) throws SQLException, ClassNotFoundException, AssetNotFoundException;
 	
 	List<Asset> showMaintenanceRecord() throws ClassNotFoundException, SQLException;
 	boolean performMaintenance(int assetId, String maintenanceDate, String description, double cost) throws SQLException, AssetNotMaintainException, ClassNotFoundException, AssetNotFoundException;

@@ -114,7 +114,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	@Override
 	public Asset searchAsset(int assetId) throws SQLException, AssetNotFoundException, ClassNotFoundException {
 	    connection = ConnectionHelper.getConnection();
-	    String cmd = "SELECT * FROM assets WHERE asset_id = ?";
+	    String cmd = "select * from assets where asset_id = ?";
 	    pst = connection.prepareStatement(cmd);
 	    pst.setInt(1, assetId);
 	    ResultSet rs = pst.executeQuery();
@@ -160,13 +160,23 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	}
 
 	@Override
-	public boolean allocateAsset(int assetId, int employeeId, String allocationDate) throws SQLException, ClassNotFoundException, AssetNotMaintainException {
-		connection = ConnectionHelper.getConnection();
+	public boolean allocateAsset(int assetId, int employeeId, String allocationDate)
+	        throws SQLException, ClassNotFoundException, AssetNotMaintainException, AssetNotFoundException {
+	    
+	    connection = ConnectionHelper.getConnection();
 
-		String checkCmd = "select max(maintenance_date) as last_maintained from maintenance_records where asset_id = ?";
-	    pst = connection.prepareStatement(checkCmd);
+		String cmd = "select max(maintenance_date) as last_maintained from maintenance_records where asset_id = ?";
+	    pst = connection.prepareStatement(cmd);
 	    pst.setInt(1, assetId);
 	    ResultSet rs = pst.executeQuery();
+	    if (rs.next() && rs.getInt(1) == 0) {
+	        throw new AssetNotFoundException("❌ Asset with ID " + assetId + " not found.");
+	    }
+
+	    String checkCmd = "SELECT MAX(maintenance_date) as last_maintained FROM maintenance_records WHERE asset_id = ?";
+	    pst = connection.prepareStatement(checkCmd);
+	    pst.setInt(1, assetId);
+	    rs = pst.executeQuery();
 
 	    if (rs.next()) {
 	        java.sql.Date lastMaintainedDate = rs.getDate("last_maintained");
@@ -179,8 +189,8 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	            }
 	        }
 	    }
-	    
-	    String cmd = "insert into asset_allocations (asset_id, employee_id, allocation_date) values (?, ?, ?)";
+
+	    cmd = "insert into asset_allocations (asset_id, employee_id, allocation_date) values (?, ?, ?)";
 	    pst = connection.prepareStatement(cmd);
 	    pst.setInt(1, assetId);
 	    pst.setInt(2, employeeId);
@@ -188,19 +198,30 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 
 	    return pst.executeUpdate() > 0;
 	}
-
+	
 	@Override
-	public boolean deallocateAsset(int assetId, int employeeId, String returnDate) throws SQLException, ClassNotFoundException {
-		connection = ConnectionHelper.getConnection();
-	    String cmd = "update asset_allocations set return_date = ? where asset_id = ? AND employee_id = ? and return_date is null";
-	    pst = connection.prepareStatement(cmd);
+	public boolean deallocateAsset(int assetId, int employeeId, String returnDate)
+	        throws SQLException, ClassNotFoundException, AssetNotFoundException {
+	    
+	    connection = ConnectionHelper.getConnection();
 
+		String cmd = "select * from Maintenance;";
+	    pst = connection.prepareStatement(cmd);
+	    pst.setInt(1, assetId);
+	    ResultSet rs = pst.executeQuery();
+	    if (rs.next() && rs.getInt(1) == 0) {
+	        throw new AssetNotFoundException("❌ Asset with ID " + assetId + " not found.");
+	    }
+
+	    cmd = "update asset_allocations set return_date = ? where asset_id = ? and employee_id = ? and return_date is null";
+	    pst = connection.prepareStatement(cmd);
 	    pst.setDate(1, java.sql.Date.valueOf(returnDate));
 	    pst.setInt(2, assetId);
 	    pst.setInt(3, employeeId);
 
 	    return pst.executeUpdate() > 0;
 	}
+
 	
 	@Override
 	public List<Asset> showMaintenanceRecord() throws ClassNotFoundException, SQLException {
@@ -227,6 +248,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 		
 		return maintenanceList;
 	}
+
 
 	@Override
 	public boolean performMaintenance(int assetId, String maintenanceDate, String description, double cost)

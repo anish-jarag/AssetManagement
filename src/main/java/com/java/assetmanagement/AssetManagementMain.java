@@ -435,5 +435,5 @@ public class AssetManagementMain {
 //	1. If the item is decommissioned or under maintenance don't allocate (Only update if its available)
 //	2. Create enum available After deallocating update the status to Available
 //	3. After allocating, performing maintenance, reserving update the status in asset respectively
-//	4. 
+//	4. Asset allocate asset not found exception
 //	5. 
