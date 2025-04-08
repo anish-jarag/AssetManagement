@@ -90,7 +90,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	        throw new AssetNotFoundException("❌ No asset found with ID: " + asset.getAssetId());
 	    }
 
-	    return pst.executeUpdate() > 0;
+	    return true;
 	}
 
 	@Override
@@ -192,7 +192,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	@Override
 	public boolean deallocateAsset(int assetId, int employeeId, String returnDate) throws SQLException, ClassNotFoundException {
 		connection = ConnectionHelper.getConnection();
-	    String cmd = "UPDATE asset_allocations SET return_date = ? WHERE asset_id = ? AND employee_id = ? AND return_date IS NULL";
+	    String cmd = "update asset_allocations set return_date = ? where asset_id = ? AND employee_id = ? and return_date is null";
 	    pst = connection.prepareStatement(cmd);
 
 	    pst.setDate(1, java.sql.Date.valueOf(returnDate));
@@ -322,7 +322,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	        throw new AssetNotFoundException("❌ Asset not found.");
 	    }
 		
-	    cmd = "insert into asset_reservations (asset_id, employee_id, reservation_date, start_date, end_date) values (?, ?, ?, ?, ?)";
+	    cmd = "insert into reservations (asset_id, employee_id, reservation_date, start_date, end_date) values (?, ?, ?, ?, ?)";
 	    pst = connection.prepareStatement(cmd);
 	    pst.setInt(1, assetId);
 	    pst.setInt(2, employeeId);
@@ -336,7 +336,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	@Override
 	public boolean withdrawReservation(int reservationId) throws SQLException, ClassNotFoundException {
 		connection = ConnectionHelper.getConnection();
-	    String cmd = "delete from asset_reservations where reservation_id = ?";
+	    String cmd = "delete from reservations where reservation_id = ?";
 	    pst = connection.prepareStatement(cmd);
 	    pst.setInt(1, reservationId);
 
