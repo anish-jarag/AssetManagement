@@ -6,6 +6,7 @@ public class AssetAllocation {
 	private int allocationId;
     private int assetId;
     private int employeeId;
+    private String employeeName;
     private Date allocationDate;
     private Date returnDate;
     
@@ -66,6 +67,14 @@ public class AssetAllocation {
 	public String toString() {
 		return "AssetAllocation [allocationId=" + allocationId + ", assetId=" + assetId + ", employeeId=" + employeeId
 				+ ", allocationDate=" + allocationDate + ", returnDate=" + returnDate + "]";
+	}
+
+	public String getEmployeeName() {
+		return employeeName;
+	}
+
+	public void setEmployeeName(String employeeName) {
+		this.employeeName = employeeName;
 	}
     
     

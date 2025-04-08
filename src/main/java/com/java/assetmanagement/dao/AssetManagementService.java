@@ -16,14 +16,15 @@ public interface AssetManagementService {
 	Asset searchAsset(int assetId) throws SQLException, AssetNotFoundException, ClassNotFoundException;
 	
 	List<AssetAllocation> showAllocations() throws ClassNotFoundException, SQLException;
-	boolean allocateAsset(int assetId, int employeeId, String allocationDate) throws SQLException, ClassNotFoundException;
-	boolean deallocateAsset(int assetId, int employeeId, String returnDate) throws SQLException;
+	boolean allocateAsset(int assetId, int employeeId, String allocationDate) throws SQLException, ClassNotFoundException, AssetNotMaintainException;
+	boolean deallocateAsset(int assetId, int employeeId, String returnDate) throws SQLException, ClassNotFoundException;
 	
 	List<Asset> showMaintenanceRecord() throws ClassNotFoundException, SQLException;
-	boolean performMaintenance(int assetId, String maintenanceDate, String description, double cost) throws SQLException, AssetNotMaintainException;
+	boolean performMaintenance(int assetId, String maintenanceDate, String description, double cost) throws SQLException, AssetNotMaintainException, ClassNotFoundException, AssetNotFoundException;
 	
-	List<Asset> showReservations() throws ClassNotFoundException, SQLException;
-	boolean reserveAsset(int assetId, int employeeId, String reservationDate, String startDate, String endDate) throws SQLException;
-	boolean withdrawReservation(int reservationId) throws SQLException;
-
+	List<AssetAllocation> showReservations() throws ClassNotFoundException, SQLException;
+	boolean reserveAsset(int assetId, int employeeId, String reservationDate, String startDate, String endDate) throws SQLException, ClassNotFoundException, AssetNotMaintainException, AssetNotFoundException;
+	boolean withdrawReservation(int reservationId) throws SQLException, ClassNotFoundException;
+	
+	boolean isAssetReserved(int assetId, String allocationDate) throws Exception;
 }

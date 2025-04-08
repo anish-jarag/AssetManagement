@@ -12,6 +12,7 @@ import com.java.assetmanagement.model.Asset;
 import com.java.assetmanagement.model.AssetAllocation;
 import com.java.assetmanagement.model.AssetStatus;
 import com.java.assetmanagement.myexceptions.AssetNotFoundException;
+import com.java.assetmanagement.myexceptions.AssetNotMaintainException;
 
 public class AssetManagementMain {
 	static Scanner scanner;
@@ -63,7 +64,7 @@ public class AssetManagementMain {
 					updateAssets();
 		                break;
 	            case 4:
-					daleteAssets();
+					deleteAsset();
 		                break;
 	            case 5:
 					showAllocations();
@@ -97,19 +98,92 @@ public class AssetManagementMain {
 	}
 	
 	private static void withdrawReservation() {
-		// TODO Auto-generated method stub
+		System.out.print("Enter Reservation ID to withdraw: ");
+	    int reservationId = scanner.nextInt();
+
+	    try {
+	        boolean withdrawn = assetDao.withdrawReservation(reservationId);
+	        if (withdrawn) {
+	            System.out.println("✅ Reservation withdrawn successfully.");
+	        } else {
+	            System.out.println("❌ Failed to withdraw reservation.");
+	        }
+	    } catch (Exception e) {
+	        System.out.println("❌ Error: " + e.getMessage());
+	    }
 		
 	}
 
 	private static void reserveAsset() {
-		// TODO Auto-generated method stub
+		System.out.print("Enter Asset ID to reserve: ");
+	    int assetId = scanner.nextInt();
+	    try {
+	        assetDao.searchAsset(assetId); 
+	    } catch (ClassNotFoundException | SQLException | AssetNotFoundException e) {
+	        System.out.println("❌ Error: " + e.getMessage());
+	        return;
+	    }
+
+	    System.out.print("Enter Employee ID: ");
+	    int employeeId = scanner.nextInt();
+	    scanner.nextLine();
+
+	    System.out.print("Enter Reservation Date (YYYY-MM-DD): ");
+	    String reservationDate = scanner.nextLine();
+
+	    System.out.print("Enter Start Date (YYYY-MM-DD): ");
+	    String startDate = scanner.nextLine();
+
+	    System.out.print("Enter End Date (YYYY-MM-DD): ");
+	    String endDate = scanner.nextLine();
+
+	    try {
+	        boolean reserved = assetDao.reserveAsset(assetId, employeeId, reservationDate, startDate, endDate);
+	        if (reserved) {
+	            System.out.println("✅ Asset reserved successfully.");
+	        } else {
+	            System.out.println("❌ Failed to reserve asset.");
+	        }
+	    } catch (AssetNotMaintainException e) {
+	        System.out.println("⚠️ Maintenance Exception: " + e.getMessage());
+	    } catch (Exception e) {
+	        System.out.println("❌ Error: " + e.getMessage());
+	    }
 		
 	}
 
 	private static void showReservations() {
-		// TODO Auto-generated method stub
-		
+	    try {
+	        List<AssetAllocation> reservations = assetDao.showReservations();
+
+	        if (reservations.isEmpty()) {
+	            System.out.println("⚠️  No reservations found.");
+	            return;
+	        }
+
+	        System.out.println("--------------------------------------------------------------------------------------");
+	        System.out.println("\t\t\tReservation Records");
+	        System.out.println("--------------------------------------------------------------------------------------");
+	        System.out.printf("%-15s %-10s %-25s %-15s %-15s\n",
+	            "| Reservation ID", "| Asset ID", "| Employee (ID - Name)", "| Start Date", "| End Date     |");
+	        System.out.println("--------------------------------------------------------------------------------------");
+
+	        for (AssetAllocation reservation : reservations) {
+	            System.out.printf("| %-14d | %-9d | %-23s | %-13s | %-12s |\n",
+	                              reservation.getAllocationId(),
+	                              reservation.getAssetId(),
+	                              reservation.getEmployeeId() + " - " + reservation.getEmployeeName(),
+	                              reservation.getAllocationDate(),
+	                              reservation.getReturnDate());
+	        }
+
+	        System.out.println("-------------------------------------------------------------------------------------\n");
+
+	    } catch (Exception e) {
+	        System.out.println("❌ Error fetching reservations: " + e.getMessage());
+	    }
 	}
+
 
 	private static void performMaintenance() {
 		// TODO Auto-generated method stub
@@ -124,6 +198,13 @@ public class AssetManagementMain {
 	private static void deallocateAsset() {
 	    System.out.print("Enter Asset ID to deallocate: ");
 	    int assetId = scanner.nextInt();
+	    
+	    try {
+			Asset existing = assetDao.searchAsset(assetId);
+		} catch (ClassNotFoundException | SQLException | AssetNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 	    System.out.print("Enter Employee ID: ");
 	    int employeeId = scanner.nextInt();
@@ -146,27 +227,39 @@ public class AssetManagementMain {
 
 
 	private static void allocateAsset() {
-		System.out.print("Enter Asset ID to allocate: ");
+	    System.out.print("Enter Asset ID to allocate: ");
 	    int assetId = scanner.nextInt();
+	    try {
+	        Asset existing = assetDao.searchAsset(assetId); 
+	    } catch (ClassNotFoundException | SQLException | AssetNotFoundException e) {
+	        System.out.println("❌ Error: " + e.getMessage());
+	        return;
+	    }
 
 	    System.out.print("Enter Employee ID: ");
 	    int employeeId = scanner.nextInt();
-	    scanner.nextLine(); // consume newline
+	    scanner.nextLine(); 
 
 	    System.out.print("Enter Allocation Date (YYYY-MM-DD): ");
 	    String allocationDate = scanner.nextLine();
-		
+
 	    try {
-			boolean allocated = assetDao.allocateAsset(assetId, employeeId, allocationDate);
-			if (allocated) {
+	        if (assetDao.isAssetReserved(assetId, allocationDate)) {
+	            System.out.println("❌ Allocation failed. Asset is reserved on " + allocationDate);
+	            return;
+	        }
+
+	        boolean allocated = assetDao.allocateAsset(assetId, employeeId, allocationDate);
+	        if (allocated) {
 	            System.out.println("✅ Asset allocated successfully.");
 	        } else {
 	            System.out.println("❌ Failed to allocate asset.");
 	        }
-		} catch (Exception e) {
-			System.out.println("❌ Error: " + e.getMessage());
-		}
+	    } catch (Exception e) {
+	        System.out.println("❌ Error: " + e.getMessage());
+	    }
 	}
+
 
 	private static void showAllocations() {
 	    try {
@@ -205,7 +298,7 @@ public class AssetManagementMain {
         return new Date(utilDate.getTime());
     }
 	
-	private static void daleteAssets() {
+	private static void deleteAsset() {
 		System.out.print("Enter the Asset_ID for the asset you want to delete: ");
 	    int assetId = scanner.nextInt();
 
@@ -225,15 +318,18 @@ public class AssetManagementMain {
 
 	private static void updateAssets() {
 	    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-	    sdf.setLenient(false);
+	    
 
 	    try {
-	        Asset asset = new Asset();
-
 	        System.out.print("Enter Asset ID to update: ");
-	        asset.setAssetId(scanner.nextInt());
+	        int assetId = scanner.nextInt();
 	        scanner.nextLine();
-
+	        
+	        Asset existing = assetDao.searchAsset(assetId);
+	        
+	        Asset asset = new Asset();
+	        asset.setAssetId(assetId);
+	        
 	        System.out.print("Enter Updated Name: ");
 	        asset.setName(scanner.nextLine());
 
@@ -255,6 +351,7 @@ public class AssetManagementMain {
 
 	        System.out.print("Enter Updated Owner ID: ");
 	        asset.setOwnerId(scanner.nextInt());
+	        scanner.nextLine();
 
 	        boolean updated = assetDao.updateAsset(asset);
 	        if (updated) {
@@ -270,7 +367,7 @@ public class AssetManagementMain {
 
 	private static void addAssets() {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-		sdf.setLenient(false); 
+		
 		try {
 	        Asset asset = new Asset();
 
@@ -331,3 +428,12 @@ public class AssetManagementMain {
 		
 	}
 }
+
+
+
+// TO DO
+//	1. If the item is decommissioned or under maintenance don't allocate (Only update if its available)
+//	2. Create enum available After deallocating update the status to Available
+//	3. After allocating, performing maintenance, reserving update the status in asset respectively
+//	4. 
+//	5. 
