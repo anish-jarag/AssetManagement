@@ -11,6 +11,7 @@ import com.java.assetmanagement.dao.AssetManagementServiceImpl;
 import com.java.assetmanagement.model.Asset;
 import com.java.assetmanagement.model.AssetAllocation;
 import com.java.assetmanagement.model.AssetStatus;
+import com.java.assetmanagement.model.Employee;
 import com.java.assetmanagement.myexceptions.AssetNotFoundException;
 import com.java.assetmanagement.myexceptions.AssetNotMaintainException;
 
@@ -172,7 +173,7 @@ public class AssetManagementMain {
 	            System.out.printf("| %-14d | %-9d | %-23s | %-13s | %-12s |\n",
 	                              reservation.getAllocationId(),
 	                              reservation.getAssetId(),
-	                              reservation.getEmployeeId() + " - " + reservation.getEmployeeName(),
+	                              reservation.getEmployeeId(),
 	                              reservation.getAllocationDate(),
 	                              reservation.getReturnDate());
 	        }
@@ -388,11 +389,8 @@ public class AssetManagementMain {
 	        System.out.print("Enter Location: ");
 	        asset.setLocation(scanner.nextLine());
 
-	        System.out.print("Enter Status (in_use, decommissioned, under_maintenance): ");
-	        asset.setStatus(AssetStatus.valueOf(scanner.nextLine().toLowerCase()));
-
-	        System.out.print("Enter Owner ID: ");
-	        asset.setOwnerId(scanner.nextInt());
+	        System.out.print("Enter Status (AVAILABLE, IN_USE, DECOMISSIONED, UNDER_MAINTENANCE, RESERVED): ");
+	        asset.setStatus(AssetStatus.valueOf(scanner.nextLine().toUpperCase()));
 
 	        boolean added = assetDao.addAsset(asset);
 	        if (added) {
@@ -435,5 +433,11 @@ public class AssetManagementMain {
 //	1. If the item is decommissioned or under maintenance don't allocate (Only update if its available)
 //	2. Create enum available After deallocating update the status to Available
 //	3. After allocating, performing maintenance, reserving update the status in asset respectively
-//	4. If asset is used by other then first deallocate it from the owner and then alloacate to new
-//	5. 
+//	4. If asset is used by other then asset cant be allocated
+//	5. Return date cant be less than allocation date
+//  6. Maintenance cant be done if the product is allocated or reserved
+//  7. Start date cant be less reservation date
+
+
+
+

@@ -5,10 +5,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import com.java.assetmanagement.model.Asset;
 import com.java.assetmanagement.model.AssetAllocation;
 import com.java.assetmanagement.model.AssetStatus;
+import com.java.assetmanagement.model.MaintenanceRecord;
 import com.java.assetmanagement.myexceptions.AssetNotFoundException;
 import com.java.assetmanagement.myexceptions.AssetNotMaintainException;
 import com.java.assetmanagement.util.ConnectionHelper;
@@ -48,8 +50,8 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	public boolean addAsset(Asset asset) throws SQLException, ClassNotFoundException{
 		try {
 			connection = ConnectionHelper.getConnection();
-			String cmd = "insert into Assets (name, type, serial_number, purchase_date, location, status, owner_id) "
-					+ "values (?, ?, ?, ?, ?, ?, ?)";
+			String cmd = "insert into Assets (name, type, serial_number, purchase_date, location, status) "
+					+ "values (?, ?, ?, ?, ?, ?)";
 			
 			pst = connection.prepareStatement(cmd);
 
@@ -59,7 +61,6 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 			pst.setDate(4, asset.getPurchaseDate());
 			pst.setString(5, asset.getLocation());
 			pst.setString(6, asset.getStatus().toString());
-			pst.setInt(7, asset.getOwnerId());
 			
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -70,46 +71,48 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	}
 
 	@Override
-	public boolean updateAsset(Asset asset) throws SQLException, AssetNotFoundException, ClassNotFoundException {
-		connection = ConnectionHelper.getConnection();
-		String cmd = "update Assets set name=?, type=?, serial_number=?, purchase_date=?, location=?, status=?, owner_id=? where asset_id =?";
-		pst = connection.prepareStatement(cmd);
-		
-		pst.setString(1, asset.getName());
-		pst.setString(2, asset.getType());
-		pst.setString(3, asset.getSerialNumber());
-		pst.setDate(4, asset.getPurchaseDate());
-		pst.setString(5, asset.getLocation());
-		pst.setString(6, asset.getStatus().toString());
-		pst.setInt(7, asset.getOwnerId());
-		pst.setInt(8, asset.getAssetId());
-		
-		int rowsAffected = pst.executeUpdate();
-
-	    if (rowsAffected == 0) {
-	        throw new AssetNotFoundException("❌ No asset found with ID: " + asset.getAssetId());
+	public boolean updateAsset(Asset asset) throws ClassNotFoundException, SQLException, AssetNotFoundException {
+	    if (asset == null || asset.getAssetId() <= 0 ) {
+	        throw new IllegalArgumentException("❌ Invalid asset data provided for update.");
 	    }
 
-	    return true;
+	    Connection connection = ConnectionHelper.getConnection();
+
+	    PreparedStatement checkStmt = connection.prepareStatement("select * from Assets where asset_id = ?");
+	    checkStmt.setInt(1, asset.getAssetId());
+	    ResultSet rs = checkStmt.executeQuery();
+	    if (!rs.next()) {
+	        throw new AssetNotFoundException("❌ Asset ID not found: " + asset.getAssetId());
+	    }
+
+	    String cmd = "update Assets set name=?, serial_number=?, purchase_date=?, status=? where asset_id =?";
+	    PreparedStatement pst = connection.prepareStatement(cmd);
+	    pst.setString(1, asset.getName());
+	    pst.setString(2, asset.getSerialNumber());
+	    pst.setDate(3, asset.getPurchaseDate());
+	    pst.setString(4, asset.getStatus().toString());
+	    pst.setInt(5, asset.getAssetId());
+
+	    int rowsUpdated = pst.executeUpdate();
+	    return rowsUpdated > 0;
 	}
 
+
 	@Override
-	public boolean deleteAsset(int assetId) throws SQLException, AssetNotFoundException, ClassNotFoundException {
-		try {
-			connection = ConnectionHelper.getConnection();
-			String cmd = "delete from assets where asset_id = ?";
-			pst = connection.prepareStatement(cmd);
-			pst.setInt(1, assetId);
-			int rowsAffected = pst.executeUpdate();
-			if (rowsAffected == 0) {
-			    throw new AssetNotFoundException("❌ Asset with ID " + assetId + " not found.");
-			}
-			return true;
-		} catch (ClassNotFoundException | AssetNotFoundException | SQLException e) {
-			e.printStackTrace();
-		} 
-		return false;
-	}	
+	public boolean deleteAsset(int assetId) throws ClassNotFoundException, SQLException {
+	    if (assetId <= 0) {
+	        throw new IllegalArgumentException("❌ Invalid asset ID for deletion.");
+	    }
+
+	    Connection connection = ConnectionHelper.getConnection();
+	    String cmd = "delete from Assets where asset_id = ?";
+	    PreparedStatement pst = connection.prepareStatement(cmd);
+	    pst.setInt(1, assetId);
+
+	    int rowsDeleted = pst.executeUpdate();
+	    return rowsDeleted > 0;
+	}
+
 	
 	@Override
 	public Asset searchAsset(int assetId) throws SQLException, AssetNotFoundException, ClassNotFoundException {
@@ -160,8 +163,8 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	}
 
 	@Override
-	public boolean allocateAsset(int assetId, int employeeId, String allocationDate)
-	        throws SQLException, ClassNotFoundException, AssetNotMaintainException, AssetNotFoundException {
+	public boolean allocateAsset(int assetId, int employeeId, String allocationDate) throws ClassNotFoundException, SQLException, AssetNotFoundException, AssetNotMaintainException
+	    {
 	    
 	    connection = ConnectionHelper.getConnection();
 
@@ -172,8 +175,20 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	    if (rs.next() && rs.getInt(1) == 0) {
 	        throw new AssetNotFoundException("❌ Asset with ID " + assetId + " not found.");
 	    }
-
-	    String checkCmd = "SELECT MAX(maintenance_date) as last_maintained FROM maintenance_records WHERE asset_id = ?";
+	    
+	    if (rs.next() && rs.getInt(1) > 0) {
+	        throw new SQLException("❌ Asset is already allocated to another employee. Please deallocate it first.");
+	    }
+	    
+	    try {
+			if (isAssetReserved(assetId, allocationDate)) {
+			    throw new SQLException("❌ Asset is reserved by another employee on the requested allocation date.");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	    
+	    String checkCmd = "select max(maintenance_date) as last_maintained from maintenance_records where asset_id = ?";
 	    pst = connection.prepareStatement(checkCmd);
 	    pst.setInt(1, assetId);
 	    rs = pst.executeQuery();
@@ -205,7 +220,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	    
 	    connection = ConnectionHelper.getConnection();
 
-		String cmd = "select * from Maintenance;";
+		String cmd = "select * from maintenance where asset_id = ?";
 	    pst = connection.prepareStatement(cmd);
 	    pst.setInt(1, assetId);
 	    ResultSet rs = pst.executeQuery();
@@ -224,30 +239,48 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 
 	
 	@Override
-	public List<Asset> showMaintenanceRecord() throws ClassNotFoundException, SQLException {
+	public List<MaintenanceRecord> showMaintenanceRecord() throws ClassNotFoundException, SQLException {
 		connection = ConnectionHelper.getConnection();
-		List<Asset> maintenanceList = new ArrayList<Asset>();
-		
+		if (connection == null) {
+			throw new SQLException("Database connection is not available.");
+		}
+
+		List<MaintenanceRecord> maintenanceList = new ArrayList<>();
+
 		String cmd = "select * from Maintenance;";
 		pst = connection.prepareStatement(cmd);
-		
+
 		ResultSet rs = pst.executeQuery();
-		Asset asset = null;
-		while(rs.next()) {
-			asset = new Asset();
-			asset.setAssetId(rs.getInt("asset_id"));
-	        asset.setName(rs.getString("name"));
-	        asset.setType(rs.getString("type"));
-	        asset.setSerialNumber(rs.getString("serial_number"));
-	        asset.setPurchaseDate(rs.getDate("purchase_date"));
-	        asset.setLocation(rs.getString("location"));
-	        asset.setStatus(AssetStatus.valueOf(rs.getString("status")));
-	        asset.setOwnerId(rs.getInt("owner_id"));
-	        maintenanceList.add(asset);
+		if (rs == null) {
+			throw new SQLException("No data retrieved from the Maintenance table.");
 		}
-		
+
+		MaintenanceRecord record = null;
+		while (rs.next()) {
+			double cost = rs.getDouble("cost");
+			if (cost < 0) continue; 
+
+			String description = rs.getString("description");
+			if (description == null || description.trim().isEmpty()) continue;
+
+			record = new MaintenanceRecord();
+			record.setMaintenanceId(rs.getInt("maintenance_id"));
+			record.setAssetId(rs.getInt("asset_id"));
+			record.setMaintenanceDate(rs.getDate("maintenance_date"));
+			record.setDescription(description);
+			record.setCost(cost);
+
+			maintenanceList.add(record);
+		}
+
+		if (maintenanceList.isEmpty()) {
+			System.out.println("⚠️ No maintenance records found.");
+		}
+
 		return maintenanceList;
 	}
+
+
 
 
 	@Override
@@ -298,7 +331,6 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	        assetAllocation.setAllocationId(rs.getInt("reservation_id")); 
 	        assetAllocation.setAssetId(rs.getInt("asset_id"));
 	        assetAllocation.setEmployeeId(rs.getInt("employee_id"));
-	        assetAllocation.setEmployeeName(rs.getString("name"));
 	        assetAllocation.setAllocationDate(rs.getDate("start_date"));
 	        assetAllocation.setReturnDate(rs.getDate("end_date"));
 
@@ -338,7 +370,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	    if (rs.next()) {
 	        String status = rs.getString("status");
 	        if (status.equalsIgnoreCase("decommissioned")) {
-	        	throw new AssetNotMaintainException("❌ Cannot maintain a decommissioned asset.");
+	        	throw new AssetNotMaintainException("❌ Cannot reserve a decommissioned asset.");
 		        }
 		} else {
 	        throw new AssetNotFoundException("❌ Asset not found.");

@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.java.assetmanagement.model.Asset;
 import com.java.assetmanagement.model.AssetAllocation;
+import com.java.assetmanagement.model.MaintenanceRecord;
 import com.java.assetmanagement.myexceptions.AssetNotFoundException;
 import com.java.assetmanagement.myexceptions.AssetNotMaintainException;
 
@@ -16,10 +17,10 @@ public interface AssetManagementService {
 	Asset searchAsset(int assetId) throws SQLException, AssetNotFoundException, ClassNotFoundException;
 	
 	List<AssetAllocation> showAllocations() throws ClassNotFoundException, SQLException;
-	boolean allocateAsset(int assetId, int employeeId, String allocationDate) throws SQLException, ClassNotFoundException, AssetNotMaintainException, AssetNotFoundException;
+	boolean allocateAsset(int assetId, int employeeId, String allocationDate) throws SQLException, ClassNotFoundException, AssetNotMaintainException, AssetNotFoundException, Exception;
 	boolean deallocateAsset(int assetId, int employeeId, String returnDate) throws SQLException, ClassNotFoundException, AssetNotFoundException;
 	
-	List<Asset> showMaintenanceRecord() throws ClassNotFoundException, SQLException;
+	List<MaintenanceRecord> showMaintenanceRecord() throws ClassNotFoundException, SQLException;
 	boolean performMaintenance(int assetId, String maintenanceDate, String description, double cost) throws SQLException, AssetNotMaintainException, ClassNotFoundException, AssetNotFoundException;
 	
 	List<AssetAllocation> showReservations() throws ClassNotFoundException, SQLException;
