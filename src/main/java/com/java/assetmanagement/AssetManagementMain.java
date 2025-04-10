@@ -10,7 +10,7 @@ import java.util.Scanner;
 import com.java.assetmanagement.dao.AssetManagementService;
 import com.java.assetmanagement.dao.AssetManagementServiceImpl;
 import com.java.assetmanagement.model.Asset;
-import com.java.assetmanagement.model.AssetAllocation;
+import com.java.assetmanagement.model.AssetAllocationTest;
 import com.java.assetmanagement.model.AssetStatus;
 import com.java.assetmanagement.model.Employee;
 import com.java.assetmanagement.model.MaintenanceRecord;
@@ -157,7 +157,7 @@ public class AssetManagementMain {
 
 	private static void showReservations() {
 	    try {
-	        List<AssetAllocation> reservations = assetDao.showReservations();
+	        List<AssetAllocationTest> reservations = assetDao.showReservations();
 
 	        if (reservations.isEmpty()) {
 	            System.out.println("⚠️  No reservations found.");
@@ -171,7 +171,7 @@ public class AssetManagementMain {
 	            "| Reservation ID", "| Asset ID", "| Employee (ID - Name)", "| Start Date", "| End Date     |");
 	        System.out.println("--------------------------------------------------------------------------------------");
 
-	        for (AssetAllocation reservation : reservations) {
+	        for (AssetAllocationTest reservation : reservations) {
 	            System.out.printf("| %-14d | %-9d | %-23s | %-13s | %-12s |\n",
 	                              reservation.getAllocationId(),
 	                              reservation.getAssetId(),
@@ -351,7 +351,7 @@ public class AssetManagementMain {
 
 	private static void showAllocations() {
 	    try {
-	        List<AssetAllocation> allocations = assetDao.showAllocations();
+	        List<AssetAllocationTest> allocations = assetDao.showAllocations();
 
 	        if (allocations.isEmpty()) {
 	            System.out.println("⚠️  No asset allocations found.");
@@ -365,7 +365,7 @@ public class AssetManagementMain {
                 "|  Allocation ID", "| Asset ID  ", " | Employee ID ", "| Allocation Date", " | ReturnDate   |");
             System.out.println("---------------------------------------------------------------------------------");
 
-	        for (AssetAllocation allocation : allocations) {
+	        for (AssetAllocationTest allocation : allocations) {
 	            System.out.printf("| %-15d | %-10d | %-10d | %-15s | %-15s |\n",
 	                              allocation.getAllocationId(),
 	                              allocation.getAssetId(),
