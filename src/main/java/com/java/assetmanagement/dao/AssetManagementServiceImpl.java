@@ -205,6 +205,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	            }
 	        }
 	    }
+	    updateAssetStatus(assetId, AssetStatus.IN_USE);
 
 	    cmd = "insert into asset_allocations (asset_id, employee_id, allocation_date) values (?, ?, ?)";
 	    pst = connection.prepareStatement(cmd);
@@ -212,7 +213,13 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	    pst.setInt(2, employeeId);
 	    pst.setDate(3, java.sql.Date.valueOf(allocationDate));
 
-	    return pst.executeUpdate() > 0;
+	    boolean allocated = pst.executeUpdate() > 0;
+
+	    if (allocated) {
+	        updateAssetStatus(assetId, AssetStatus.IN_USE);
+	    }
+
+	    return allocated;
 	}
 	
 	@Override
@@ -239,11 +246,25 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	            pst.setInt(2, assetId);
 	            pst.setInt(3, employeeId);
 
-	            int rowsUpdated = pst.executeUpdate();
-	            return rowsUpdated > 0;
+	            boolean updated = pst.executeUpdate() > 0;
+
+	            if (updated) {
+	                updateAssetStatus(assetId, AssetStatus.AVAILABLE);
+	            }
+
+	            return updated;
 	        }
 	    }
 	}
+	
+	private boolean updateAssetStatus(int assetId, AssetStatus status) throws SQLException {
+	    String query = "update assets set status = ? where asset_id = ?";
+	    pst = connection.prepareStatement(query);
+	    pst.setString(1, status.name().toUpperCase()); 
+	    pst.setInt(2, assetId);
+	    return pst.executeUpdate() > 0;
+	}
+
 
 	
 	@Override
@@ -391,18 +412,44 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	    pst.setDate(4, java.sql.Date.valueOf(startDate));
 	    pst.setDate(5, java.sql.Date.valueOf(endDate));
 
-	    return pst.executeUpdate() > 0;
+	    boolean reserved = pst.executeUpdate() > 0;
+
+	    if (reserved) {
+	        updateAssetStatus(assetId, AssetStatus.RESERVED);
+	    }
+
+	    return reserved;
 	}
 
 	@Override
 	public boolean withdrawReservation(int reservationId) throws SQLException, ClassNotFoundException {
-		connection = ConnectionHelper.getConnection();
-	    String cmd = "delete from reservations where reservation_id = ?";
-	    pst = connection.prepareStatement(cmd);
-	    pst.setInt(1, reservationId);
+	    connection = ConnectionHelper.getConnection();
 
-	    return pst.executeUpdate() > 0;
+	    String fetchCmd = "select asset_id from reservations where reservation_id = ?";
+	    pst = connection.prepareStatement(fetchCmd);
+	    pst.setInt(1, reservationId);
+	    ResultSet rs = pst.executeQuery();
+
+	    int assetId = -1;
+	    if (rs.next()) {
+	        assetId = rs.getInt("asset_id");
+	    } else {
+	        System.out.println("❌ Reservation not found.");
+	        return false;
+	    }
+
+	    String deleteCmd = "delete from reservations where reservation_id = ?";
+	    pst = connection.prepareStatement(deleteCmd);
+	    pst.setInt(1, reservationId);
+	    boolean reserved = pst.executeUpdate() > 0;
+
+	    if (reserved) {
+	        updateAssetStatus(assetId, AssetStatus.AVAILABLE);
+	    }
+
+	    return reserved;
 	}
+
 
 	@Override
 	public boolean isAssetAllocated(int assetId) throws SQLException, ClassNotFoundException {
