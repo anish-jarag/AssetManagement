@@ -2,6 +2,7 @@ package com.java.assetmanagement;
 
 import java.sql.Date;
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Scanner;
@@ -12,6 +13,7 @@ import com.java.assetmanagement.model.Asset;
 import com.java.assetmanagement.model.AssetAllocation;
 import com.java.assetmanagement.model.AssetStatus;
 import com.java.assetmanagement.model.Employee;
+import com.java.assetmanagement.model.MaintenanceRecord;
 import com.java.assetmanagement.myexceptions.AssetNotFoundException;
 import com.java.assetmanagement.myexceptions.AssetNotMaintainException;
 
@@ -187,13 +189,98 @@ public class AssetManagementMain {
 
 
 	private static void performMaintenance() {
-		// TODO Auto-generated method stub
-		
+	    System.out.print("Enter Asset ID for maintenance: ");
+	    int assetId = scanner.nextInt();
+	    scanner.nextLine();
+
+	    try {
+	        Asset asset = assetDao.searchAsset(assetId);
+
+	        boolean isAllocated = assetDao.isAssetAllocated(assetId);
+
+	        if (isAllocated) {
+	            System.out.println("⚠️ Asset is currently allocated. Do you want to deallocate and proceed with maintenance? (yes/no): ");
+	            String response = scanner.nextLine();
+
+	            if (!response.equalsIgnoreCase("yes")) {
+	                System.out.println("❌ Maintenance aborted.");
+	                return;
+	            }
+
+	            System.out.print("Enter Employee ID to deallocate: ");
+	            int empId = scanner.nextInt();
+	            scanner.nextLine();
+
+	            System.out.print("Enter Return Date (YYYY-MM-DD): ");
+	            String returnDate = scanner.nextLine();
+
+	            boolean deallocated = assetDao.deallocateAsset(assetId, empId, returnDate);
+
+	            if (!deallocated) {
+	                System.out.println("❌ Failed to deallocate. Cannot proceed with maintenance.");
+	                return;
+	            } else {
+	                System.out.println("✅ Asset deallocated successfully.");
+	            }
+	        }
+
+	        System.out.print("Enter Maintenance Date (YYYY-MM-DD): ");
+	        String maintenanceDate = scanner.nextLine();
+
+	        System.out.print("Enter Maintenance Description: ");
+	        String description = scanner.nextLine();
+
+	        System.out.print("Enter Maintenance Cost: ");
+	        double cost = scanner.nextDouble();
+	        scanner.nextLine();
+
+	        boolean success = assetDao.performMaintenance(assetId, maintenanceDate, description, cost);
+
+	        if (success) {
+	            System.out.println("✅ Maintenance recorded successfully.");
+	        } else {
+	            System.out.println("❌ Failed to perform maintenance.");
+	        }
+
+	    } catch (AssetNotFoundException e) {
+	        System.out.println("❌ Error: " + e.getMessage());
+	    } catch (Exception e) {
+	        System.out.println("❌ Error: " + e.getMessage());
+	    }
 	}
 
+
+
 	private static void showMaintenanceRecords() {
-		// TODO Auto-generated method stub
-		
+	    try {
+	        List<MaintenanceRecord> maintenanceList = assetDao.showMaintenanceRecord();
+
+	        if (maintenanceList.isEmpty()) {
+	            System.out.println("⚠️ No maintenance records found.");
+	            return;
+	        }
+
+	        System.out.println("----------------------------------------------------------------------------------------------");
+	        System.out.println("\t\t\t\tMaintenance Record List");
+	        System.out.println("----------------------------------------------------------------------------------------------");
+	        System.out.printf("%-15s %-10s %-15s %-40s %-10s\n",
+	                "| Maintenance ID", "| Asset ID", "| Date", "| Description", "| Cost    |");
+	        System.out.println("----------------------------------------------------------------------------------------------");
+
+	        for (MaintenanceRecord record : maintenanceList) {
+	            System.out.printf("| %-14d | %-9d | %-13s | %-38s | ₹%-8.2f |\n",
+	                    record.getMaintenanceId(),
+	                    record.getAssetId(),
+	                    record.getMaintenanceDate(),
+	                    record.getDescription(),
+	                    record.getCost());
+	        }
+
+	        System.out.println("----------------------------------------------------------------------------------------------\n");
+
+	    } catch (Exception e) {
+	        System.out.println("❌ Error fetching maintenance records: " + e.getMessage());
+	    }
 	}
 
 	private static void deallocateAsset() {
@@ -319,51 +406,93 @@ public class AssetManagementMain {
 
 	private static void updateAssets() {
 	    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-	    
 
 	    try {
 	        System.out.print("Enter Asset ID to update: ");
 	        int assetId = scanner.nextInt();
 	        scanner.nextLine();
-	        
+
 	        Asset existing = assetDao.searchAsset(assetId);
-	        
+
+	        if (existing.getStatus() == AssetStatus.IN_USE) {
+	            System.out.println("⚠️ Cannot update asset while it is currently in use.");
+	            return;
+	        }
+
 	        Asset asset = new Asset();
 	        asset.setAssetId(assetId);
-	        
-	        System.out.print("Enter Updated Name: ");
-	        asset.setName(scanner.nextLine());
 
-	        System.out.print("Enter Updated Type: ");
-	        asset.setType(scanner.nextLine());
+	        System.out.print("Enter Updated Name (" + existing.getName() + "): ");
+	        String name = scanner.nextLine();
+	        asset.setName(name.isEmpty() ? existing.getName() : name);
 
-	        System.out.print("Enter Updated Serial Number: ");
-	        asset.setSerialNumber(scanner.nextLine());
+	        System.out.print("Enter Updated Type (" + existing.getType() + "): ");
+	        String type = scanner.nextLine();
+	        asset.setType(type.isEmpty() ? existing.getType() : type);
 
-	        System.out.print("Enter Updated Purchase Date (YYYY-MM-DD): ");
-	        java.util.Date date = sdf.parse(scanner.nextLine());
-	        asset.setPurchaseDate(convertSql(date));
+	        System.out.print("Enter Updated Serial Number (" + existing.getSerialNumber() + "): ");
+	        String serialNumber = scanner.nextLine();
+	        asset.setSerialNumber(serialNumber.isEmpty() ? existing.getSerialNumber() : serialNumber);
 
-	        System.out.print("Enter Updated Location: ");
-	        asset.setLocation(scanner.nextLine());
+	        System.out.print("Enter Updated Purchase Date (" + existing.getPurchaseDate() + ") [YYYY-MM-DD]: ");
+	        String dateInput = scanner.nextLine();
+	        if (dateInput.isEmpty()) {
+	            asset.setPurchaseDate(existing.getPurchaseDate());
+	        } else {
+	            java.util.Date date = sdf.parse(dateInput);
+	            if (date.after(new java.util.Date())) {
+	                System.out.println("❌ Purchase date cannot be in the future.");
+	                return;
+	            }
+	            asset.setPurchaseDate(convertSql(date));
+	        }
 
-	        System.out.print("Enter Updated Status (in_use, decommissioned, under_maintenance): ");
-	        asset.setStatus(AssetStatus.valueOf(scanner.nextLine().toLowerCase()));
+	        System.out.print("Enter Updated Location (" + existing.getLocation() + "): ");
+	        String location = scanner.nextLine();
+	        asset.setLocation(location.isEmpty() ? existing.getLocation() : location);
 
-	        System.out.print("Enter Updated Owner ID: ");
-	        asset.setOwnerId(scanner.nextInt());
-	        scanner.nextLine();
+	        System.out.print("Enter Updated Status (" + existing.getStatus() + ") [in_use, decommissioned, under_maintenance]: ");
+	        String statusInput = scanner.nextLine();
+	        if (statusInput.isEmpty()) {
+	            asset.setStatus(existing.getStatus());
+	        } else {
+	            try {
+	                asset.setStatus(AssetStatus.valueOf(statusInput.toUpperCase()));
+	            } catch (IllegalArgumentException e) {
+	                System.out.println("❌ Invalid status entered. Allowed: IN_USE, DECOMMISSIONED, UNDER_MAINTENANCE");
+	                return;
+	            }
+	        }
+
+	        System.out.print("Enter Updated Owner ID (" + existing.getOwnerId() + "): ");
+	        String ownerInput = scanner.nextLine();
+	        if (ownerInput.isEmpty()) {
+	            asset.setOwnerId(existing.getOwnerId());
+	        } else {
+	            int ownerId = Integer.parseInt(ownerInput);
+	            if (ownerId <= 0) {
+	                System.out.println("❌ Owner ID must be a positive number.");
+	                return;
+	            }
+	            asset.setOwnerId(ownerId);
+	        }
 
 	        boolean updated = assetDao.updateAsset(asset);
 	        if (updated) {
 	            System.out.println("✅ Asset updated successfully!");
+	        } else {
+	            System.out.println("❌ Failed to update asset.");
 	        }
+
 	    } catch (AssetNotFoundException e) {
 	        System.out.println(e.getMessage());
+	    } catch (ParseException e) {
+	        System.out.println("❌ Invalid date format. Please use YYYY-MM-DD.");
 	    } catch (Exception e) {
 	        System.out.println("❌ Error: " + e.getMessage());
 	    }
 	}
+
 
 
 	private static void addAssets() {
@@ -391,6 +520,9 @@ public class AssetManagementMain {
 
 	        System.out.print("Enter Status (AVAILABLE, IN_USE, DECOMISSIONED, UNDER_MAINTENANCE, RESERVED): ");
 	        asset.setStatus(AssetStatus.valueOf(scanner.nextLine().toUpperCase()));
+	        
+	        System.out.print("Enter Owner Id: ");
+	        asset.setOwnerId(scanner.nextInt());
 
 	        boolean added = assetDao.addAsset(asset);
 	        if (added) {
@@ -430,8 +562,6 @@ public class AssetManagementMain {
 
 
 // TO DO
-//	1. If the item is decommissioned or under maintenance don't allocate (Only update if its available)
-//	2. Create enum available After deallocating update the status to Available
 //	3. After allocating, performing maintenance, reserving update the status in asset respectively
 //	4. If asset is used by other then asset cant be allocated
 //	5. Return date cant be less than allocation date

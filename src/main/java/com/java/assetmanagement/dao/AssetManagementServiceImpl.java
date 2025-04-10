@@ -50,8 +50,8 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	public boolean addAsset(Asset asset) throws SQLException, ClassNotFoundException{
 		try {
 			connection = ConnectionHelper.getConnection();
-			String cmd = "insert into Assets (name, type, serial_number, purchase_date, location, status) "
-					+ "values (?, ?, ?, ?, ?, ?)";
+			String cmd = "insert into Assets (name, type, serial_number, purchase_date, location, status, owner_id) "
+					+ "values (?, ?, ?, ?, ?, ?, ?)";
 			
 			pst = connection.prepareStatement(cmd);
 
@@ -61,6 +61,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 			pst.setDate(4, asset.getPurchaseDate());
 			pst.setString(5, asset.getLocation());
 			pst.setString(6, asset.getStatus().toString());
+			pst.setInt(7, asset.getOwnerId());
 			
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -217,24 +218,31 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	@Override
 	public boolean deallocateAsset(int assetId, int employeeId, String returnDate)
 	        throws SQLException, ClassNotFoundException, AssetNotFoundException {
-	    
-	    connection = ConnectionHelper.getConnection();
 
-		String cmd = "select * from maintenance where asset_id = ?";
-	    pst = connection.prepareStatement(cmd);
-	    pst.setInt(1, assetId);
-	    ResultSet rs = pst.executeQuery();
-	    if (rs.next() && rs.getInt(1) == 0) {
-	        throw new AssetNotFoundException("❌ Asset with ID " + assetId + " not found.");
+	    try (Connection con = ConnectionHelper.getConnection()) {
+
+	        String cmd = "select count(*) from asset_allocations where asset_id = ? and employee_id = ? and return_date IS NULL";
+	        try (PreparedStatement checkPst = con.prepareStatement(cmd)) {
+	            checkPst.setInt(1, assetId);
+	            checkPst.setInt(2, employeeId);
+
+	            try (ResultSet rs = checkPst.executeQuery()) {
+	                if (rs.next() && rs.getInt(1) == 0) {
+	                    throw new AssetNotFoundException("❌ No active allocation found for Asset ID " + assetId + " and Employee ID " + employeeId);
+	                }
+	            }
+	        }
+
+	        cmd = "update asset_allocations set return_date = ? where asset_id = ? and employee_id = ? and return_date IS NULL";
+	        try (PreparedStatement pst = con.prepareStatement(cmd)) {
+	            pst.setDate(1, java.sql.Date.valueOf(returnDate));
+	            pst.setInt(2, assetId);
+	            pst.setInt(3, employeeId);
+
+	            int rowsUpdated = pst.executeUpdate();
+	            return rowsUpdated > 0;
+	        }
 	    }
-
-	    cmd = "update asset_allocations set return_date = ? where asset_id = ? and employee_id = ? and return_date is null";
-	    pst = connection.prepareStatement(cmd);
-	    pst.setDate(1, java.sql.Date.valueOf(returnDate));
-	    pst.setInt(2, assetId);
-	    pst.setInt(3, employeeId);
-
-	    return pst.executeUpdate() > 0;
 	}
 
 	
@@ -280,25 +288,23 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 		return maintenanceList;
 	}
 
-
-
-
 	@Override
 	public boolean performMaintenance(int assetId, String maintenanceDate, String description, double cost)
-			throws SQLException, AssetNotMaintainException, ClassNotFoundException, AssetNotFoundException {
-		 connection = ConnectionHelper.getConnection();
+	        throws SQLException, AssetNotMaintainException, ClassNotFoundException, AssetNotFoundException {
 
-		 String cmd = "select Status from assets where asset_id = ?";
-	     pst = connection.prepareStatement(cmd);
-		 pst.setInt(1, assetId);
-	     ResultSet rs = pst.executeQuery();
+	    connection = ConnectionHelper.getConnection();
+
+	    String cmd = "select status from assets where asset_id = ?";
+	    pst = connection.prepareStatement(cmd);
+	    pst.setInt(1, assetId);
+	    ResultSet rs = pst.executeQuery();
 
 	    if (rs.next()) {
 	        String status = rs.getString("status");
 	        if (status.equalsIgnoreCase("decommissioned")) {
-	        	throw new AssetNotMaintainException("❌ Cannot maintain a decommissioned asset.");
-		        }
-		} else {
+	            throw new AssetNotMaintainException("❌ Cannot maintain a decommissioned asset.");
+	        }
+	    } else {
 	        throw new AssetNotFoundException("❌ Asset not found.");
 	    }
 
@@ -311,6 +317,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 
 	    return pst.executeUpdate() > 0;
 	}
+
 	
 	@Override
 	public List<AssetAllocation> showReservations() throws ClassNotFoundException, SQLException {
@@ -395,6 +402,19 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	    pst.setInt(1, reservationId);
 
 	    return pst.executeUpdate() > 0;
+	}
+
+	@Override
+	public boolean isAssetAllocated(int assetId) throws SQLException, ClassNotFoundException {
+	    Connection con = ConnectionHelper.getConnection();
+	    String sql = "select count(*) from asset_allocation where asset_id = ? and return_date is null";
+	    PreparedStatement pst = con.prepareStatement(sql);
+	    pst.setInt(1, assetId);
+	    ResultSet rs = pst.executeQuery();
+	    if (rs.next()) {
+	        return rs.getInt(1) > 0;
+	    }
+	    return false;
 	}
 
 }

@@ -22,6 +22,8 @@ public interface AssetManagementService {
 	
 	List<MaintenanceRecord> showMaintenanceRecord() throws ClassNotFoundException, SQLException;
 	boolean performMaintenance(int assetId, String maintenanceDate, String description, double cost) throws SQLException, AssetNotMaintainException, ClassNotFoundException, AssetNotFoundException;
+	boolean isAssetAllocated(int assetId) throws SQLException, ClassNotFoundException;
+
 	
 	List<AssetAllocation> showReservations() throws ClassNotFoundException, SQLException;
 	boolean reserveAsset(int assetId, int employeeId, String reservationDate, String startDate, String endDate) throws SQLException, ClassNotFoundException, AssetNotMaintainException, AssetNotFoundException;
