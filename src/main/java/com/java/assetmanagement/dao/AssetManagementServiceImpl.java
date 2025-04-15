@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import com.java.assetmanagement.model.Asset;
-import com.java.assetmanagement.model.AssetAllocationTest;
+import com.java.assetmanagement.model.AssetAllocation;
 import com.java.assetmanagement.model.AssetStatus;
 import com.java.assetmanagement.model.MaintenanceRecord;
 import com.java.assetmanagement.myexceptions.AssetNotFoundException;
@@ -141,16 +141,16 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	
 	
 	@Override
-	public List<AssetAllocationTest> showAllocations() throws ClassNotFoundException, SQLException {
+	public List<AssetAllocation> showAllocations() throws ClassNotFoundException, SQLException {
 		connection = ConnectionHelper.getConnection();
 		String cmd = "select * from asset_allocations;";
 		pst = connection.prepareStatement(cmd);
 		
 		ResultSet rs = pst.executeQuery();
-		List<AssetAllocationTest> assetAllocatedList = new ArrayList<AssetAllocationTest>();
-		AssetAllocationTest allocation = null;
+		List<AssetAllocation> assetAllocatedList = new ArrayList<AssetAllocation>();
+		AssetAllocation allocation = null;
 		while(rs.next()) {
-			allocation = new AssetAllocationTest();
+			allocation = new AssetAllocation();
             allocation.setAllocationId(rs.getInt("allocation_id"));
             allocation.setAssetId(rs.getInt("asset_id"));
             allocation.setEmployeeId(rs.getInt("employee_id"));
@@ -341,7 +341,7 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 
 	
 	@Override
-	public List<AssetAllocationTest> showReservations() throws ClassNotFoundException, SQLException {
+	public List<AssetAllocation> showReservations() throws ClassNotFoundException, SQLException {
 		connection = ConnectionHelper.getConnection();
 	    String cmd = "select r.reservation_id, r.asset_id, r.employee_id, e.name,"
 	    		+ " r.reservation_date, r.start_date, r.end_date "
@@ -351,11 +351,11 @@ public class AssetManagementServiceImpl implements AssetManagementService{
 	    pst = connection.prepareStatement(cmd);
 
 	    ResultSet rs = pst.executeQuery();
-	    List<AssetAllocationTest> reservedAssets = new ArrayList<>();
-	    AssetAllocationTest assetAllocation;
+	    List<AssetAllocation> reservedAssets = new ArrayList<>();
+	    AssetAllocation assetAllocation;
 
 	    while (rs.next()) {
-	        assetAllocation = new AssetAllocationTest();
+	        assetAllocation = new AssetAllocation();
 	        assetAllocation.setAllocationId(rs.getInt("reservation_id")); 
 	        assetAllocation.setAssetId(rs.getInt("asset_id"));
 	        assetAllocation.setEmployeeId(rs.getInt("employee_id"));

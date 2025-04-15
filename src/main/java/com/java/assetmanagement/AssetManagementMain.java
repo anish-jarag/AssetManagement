@@ -10,9 +10,8 @@ import java.util.Scanner;
 import com.java.assetmanagement.dao.AssetManagementService;
 import com.java.assetmanagement.dao.AssetManagementServiceImpl;
 import com.java.assetmanagement.model.Asset;
-import com.java.assetmanagement.model.AssetAllocationTest;
+import com.java.assetmanagement.model.AssetAllocation;
 import com.java.assetmanagement.model.AssetStatus;
-import com.java.assetmanagement.model.Employee;
 import com.java.assetmanagement.model.MaintenanceRecord;
 import com.java.assetmanagement.myexceptions.AssetNotFoundException;
 import com.java.assetmanagement.myexceptions.AssetNotMaintainException;
@@ -157,7 +156,7 @@ public class AssetManagementMain {
 
 	private static void showReservations() {
 	    try {
-	        List<AssetAllocationTest> reservations = assetDao.showReservations();
+	        List<AssetAllocation> reservations = assetDao.showReservations();
 
 	        if (reservations.isEmpty()) {
 	            System.out.println("⚠️  No reservations found.");
@@ -171,7 +170,7 @@ public class AssetManagementMain {
 	            "| Reservation ID", "| Asset ID", "| Employee (ID - Name)", "| Start Date", "| End Date     |");
 	        System.out.println("--------------------------------------------------------------------------------------");
 
-	        for (AssetAllocationTest reservation : reservations) {
+	        for (AssetAllocation reservation : reservations) {
 	            System.out.printf("| %-14d | %-9d | %-23s | %-13s | %-12s |\n",
 	                              reservation.getAllocationId(),
 	                              reservation.getAssetId(),
@@ -351,7 +350,7 @@ public class AssetManagementMain {
 
 	private static void showAllocations() {
 	    try {
-	        List<AssetAllocationTest> allocations = assetDao.showAllocations();
+	        List<AssetAllocation> allocations = assetDao.showAllocations();
 
 	        if (allocations.isEmpty()) {
 	            System.out.println("⚠️  No asset allocations found.");
@@ -365,7 +364,7 @@ public class AssetManagementMain {
                 "|  Allocation ID", "| Asset ID  ", " | Employee ID ", "| Allocation Date", " | ReturnDate   |");
             System.out.println("---------------------------------------------------------------------------------");
 
-	        for (AssetAllocationTest allocation : allocations) {
+	        for (AssetAllocation allocation : allocations) {
 	            System.out.printf("| %-15d | %-10d | %-10d | %-15s | %-15s |\n",
 	                              allocation.getAllocationId(),
 	                              allocation.getAssetId(),
@@ -558,16 +557,6 @@ public class AssetManagementMain {
 		
 	}
 }
-
-
-
-// TO DO
-//	3. After allocating, performing maintenance, reserving update the status in asset respectively
-//	4. If asset is used by other then asset cant be allocated
-//	5. Return date cant be less than allocation date
-//  6. Maintenance cant be done if the product is allocated or reserved
-//  7. Start date cant be less reservation date
-
 
 
 
